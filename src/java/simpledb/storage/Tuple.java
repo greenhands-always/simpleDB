@@ -1,6 +1,7 @@
 package simpledb.storage;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -10,8 +11,10 @@ import java.util.Iterator;
  * with the data for each field.
  */
 public class Tuple implements Serializable {
-
     private static final long serialVersionUID = 1L;
+    private TupleDesc tupleDesc;
+    private RecordId recordID;
+    private ArrayList<Field> fields;
 
     /**
      * Create a new tuple with the specified schema (type).
@@ -20,7 +23,11 @@ public class Tuple implements Serializable {
      *           instance with at least one field.
      */
     public Tuple(TupleDesc td) {
+        this.tupleDesc = td;
+        this.fields = new ArrayList<Field>(td.numFields());
         // TODO: some code goes here
+        //Done by Huangyihang in 2023-01-28 11:42:55
+
     }
 
     /**
@@ -28,16 +35,18 @@ public class Tuple implements Serializable {
      */
     public TupleDesc getTupleDesc() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-01-28 11:44:45
+        return this.tupleDesc;
     }
 
     /**
      * @return The RecordId representing the location of this tuple on disk. May
-     *         be null.
+     * be null.
      */
     public RecordId getRecordId() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-01-28 11:45:06
+        return this.recordID;
     }
 
     /**
@@ -47,6 +56,8 @@ public class Tuple implements Serializable {
      */
     public void setRecordId(RecordId rid) {
         // TODO: some code goes here
+
+        this.recordID = rid;
     }
 
     /**
@@ -57,6 +68,8 @@ public class Tuple implements Serializable {
      */
     public void setField(int i, Field f) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-01-28 11:57:17
+        this.fields.set(i, f);
     }
 
     /**
@@ -65,7 +78,8 @@ public class Tuple implements Serializable {
      */
     public Field getField(int i) {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-01-28 12:02:22
+        return this.fields.get(i);
     }
 
     /**
@@ -78,7 +92,13 @@ public class Tuple implements Serializable {
      */
     public String toString() {
         // TODO: some code goes here
-        throw new UnsupportedOperationException("Implement this");
+        // Done by Huangyihang in 2023-01-28 16:29:35
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<this.fields.size();i++){
+            sb.append(this.fields.get(i).toString()+" ");
+        }
+        sb.append("\n");
+        return sb.toString();
     }
 
     /**
@@ -86,7 +106,8 @@ public class Tuple implements Serializable {
      */
     public Iterator<Field> fields() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-01-28 16:30:33
+        return this.fields.iterator();
     }
 
     /**
@@ -94,5 +115,7 @@ public class Tuple implements Serializable {
      */
     public void resetTupleDesc(TupleDesc td) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-01-28 16:31:34
+        this.tupleDesc = td;
     }
 }
