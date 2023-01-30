@@ -4,10 +4,7 @@ import simpledb.storage.DbFile;
 import simpledb.storage.HeapFile;
 import simpledb.storage.TupleDesc;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,12 +19,31 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    private final Map<Integer, Table> mapIDTable ;
+    private final Map<String, Table> mapNameTable ;
+
+
+    // a help class
+    public class Table implements Serializable {
+        private static final long serialVersionUID = 1L;
+        public String name;
+        public String pkeyField;
+        public DbFile dbFile;
+        public Table(String name, String pkeyField, DbFile dbFile){
+            this.name = name;
+            this.pkeyField = pkeyField;
+            this.dbFile = dbFile;
+        }
+    }
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-01-30 12:33:21
+        this.mapIDTable=new ConcurrentHashMap<>();
+        this.mapNameTable=new ConcurrentHashMap<>();
     }
 
     /**
@@ -42,6 +58,12 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-01-30 12:36:04
+        // Modified by Huangyihang in 2023-01-30 14:41:48
+        Table table = new Table(name, pkeyField, file);
+        mapIDTable.put(file.getId(), table);
+        mapNameTable.put(name, table);
+
     }
 
     public void addTable(DbFile file, String name) {
@@ -67,7 +89,11 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // TODO: some code goes here
-        return 0;
+        // Done by Huangyihang in 2023-01-30 14:57:40
+        if (!(name!=null && this.mapNameTable.containsKey(name)) ) {
+            throw new NoSuchElementException("Table " + name + " does not exist.");
+        }
+        return this.mapNameTable.get(name).dbFile.getId();
     }
 
     /**
@@ -79,7 +105,11 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-01-30 15:00:58
+        if (!this.mapIDTable.containsKey(tableid)) {
+            throw new NoSuchElementException("Table " + tableid + " does not exist.");
+        }
+        return this.mapIDTable.get(tableid).dbFile.getTupleDesc();
     }
 
     /**
@@ -91,22 +121,31 @@ public class Catalog {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // TODO: some code goes here
-        return null;
+        if(!this.mapIDTable.containsKey(tableid)){
+            throw new NoSuchElementException("Table " + tableid + " does not exist.");
+        }
+        return this.mapIDTable.get(tableid).dbFile;
     }
 
     public String getPrimaryKey(int tableid) {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-01-30 15:01:32
+        if(!this.mapIDTable.containsKey(tableid)){
+            throw new NoSuchElementException("Table " + tableid + " does not exist.");
+        }
+        return this.mapIDTable.get(tableid).pkeyField;
     }
 
     public Iterator<Integer> tableIdIterator() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-01-30 15:04:22
+        return this.mapIDTable.keySet().iterator();
     }
 
     public String getTableName(int id) {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-01-30 15:04:44
+        return this.mapIDTable.get(id).name;
     }
 
     /**
@@ -114,6 +153,8 @@ public class Catalog {
      */
     public void clear() {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-01-30 15:05:19
+        this.mapIDTable.clear();
     }
 
     /**
