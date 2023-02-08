@@ -19,7 +19,10 @@ import java.util.NoSuchElementException;
 public class SeqScan implements OpIterator {
 
     private static final long serialVersionUID = 1L;
-
+    private TransactionId transactionId;
+    private int tableId;
+    private String tableAlias;
+    private DbFileIterator iterator;
     /**
      * Creates a sequential scan over the specified table as a part of the
      * specified transaction.
@@ -35,6 +38,11 @@ public class SeqScan implements OpIterator {
      */
     public SeqScan(TransactionId tid, int tableid, String tableAlias) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-08 11:39:05
+        this.transactionId = tid;
+        this.tableId = tableid;
+        this.tableAlias = tableAlias;
+
     }
 
     /**
@@ -50,7 +58,8 @@ public class SeqScan implements OpIterator {
      */
     public String getAlias() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-02-08 11:39:47
+        return this.tableAlias;
     }
 
     /**
@@ -66,6 +75,9 @@ public class SeqScan implements OpIterator {
      */
     public void reset(int tableid, String tableAlias) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-08 11:40:44
+        this.tableId = tableid;
+        this.tableAlias = tableAlias;
     }
 
     public SeqScan(TransactionId tid, int tableId) {
@@ -74,6 +86,9 @@ public class SeqScan implements OpIterator {
 
     public void open() throws DbException, TransactionAbortedException {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-08 11:42:05
+        this.iterator = Database.getCatalog().getDatabaseFile(this.tableId).iterator(this.transactionId);
+        this.iterator.open();
     }
 
     /**
@@ -88,26 +103,40 @@ public class SeqScan implements OpIterator {
      */
     public TupleDesc getTupleDesc() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-02-08 11:42:35
+        return Database.getCatalog().getTupleDesc(this.tableId);
     }
 
     public boolean hasNext() throws TransactionAbortedException, DbException {
         // TODO: some code goes here
-        return false;
+        // Done by Huangyihang in 2023-02-08 11:43:14
+        if(this.iterator == null)
+            return false;
+        return iterator.hasNext();
     }
 
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-08 11:43:59
+        if(this.iterator == null)
+            throw new NoSuchElementException("no such element next");
         return null;
     }
 
     public void close() {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-08 11:48:49
+        if(this.iterator != null)
+            this.iterator.close();
+        iterator = null;
     }
 
     public void rewind() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-08 11:49:15
+        if(this.iterator != null)
+            this.iterator.rewind();
     }
 }
