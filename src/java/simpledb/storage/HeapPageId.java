@@ -7,6 +7,9 @@ import java.util.Objects;
  */
 public class HeapPageId implements PageId {
 
+    private static final long serialVersionUID = 1L;
+    private int tableId;
+    private int pgNo;
     /**
      * Constructor. Create a page id structure for a specific page of a
      * specific table.
@@ -16,6 +19,9 @@ public class HeapPageId implements PageId {
      */
     public HeapPageId(int tableId, int pgNo) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-07 18:02:48
+        this.tableId = tableId;
+        this.pgNo = pgNo;
     }
 
     /**
@@ -23,7 +29,8 @@ public class HeapPageId implements PageId {
      */
     public int getTableId() {
         // TODO: some code goes here
-        return 0;
+        // Done by Huangyihang in 2023-02-07 18:02:59
+        return this.tableId;
     }
 
     /**
@@ -32,7 +39,8 @@ public class HeapPageId implements PageId {
      */
     public int getPageNumber() {
         // TODO: some code goes here
-        return 0;
+        // Done by Huangyihang in 2023-02-07 18:03:31
+        return this.pgNo;
     }
 
     /**
@@ -43,7 +51,9 @@ public class HeapPageId implements PageId {
      */
     public int hashCode() {
         // TODO: some code goes here
-        throw new UnsupportedOperationException("implement this");
+        // Done by Huangyihang in 2023-02-07 18:05:07
+        String hash = ""+this.tableId+this.pgNo;
+        return hash.hashCode();
     }
 
     /**
@@ -55,6 +65,11 @@ public class HeapPageId implements PageId {
      */
     public boolean equals(Object o) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-07 19:52:11
+        if (this == o) return true;
+        if(o == null) return false;
+        if(o instanceof HeapPageId)
+            return ((HeapPageId) o).getTableId() == this.tableId && ((HeapPageId) o).getPageNumber() == this.pgNo;
         return false;
     }
 

@@ -14,7 +14,7 @@ public class Tuple implements Serializable {
     private static final long serialVersionUID = 1L;
     private TupleDesc tupleDesc;
     private RecordId recordID;
-    private ArrayList<Field> fields;
+    private Field[] fields;
 
     /**
      * Create a new tuple with the specified schema (type).
@@ -24,7 +24,7 @@ public class Tuple implements Serializable {
      */
     public Tuple(TupleDesc td) {
         this.tupleDesc = td;
-        this.fields = new ArrayList<Field>(td.numFields());
+        this.fields = new Field[td.numFields()];
         // TODO: some code goes here
         //Done by Huangyihang in 2023-01-28 11:42:55
 
@@ -69,7 +69,7 @@ public class Tuple implements Serializable {
     public void setField(int i, Field f) {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-28 11:57:17
-        this.fields.set(i, f);
+        this.fields[i] = f;
     }
 
     /**
@@ -79,7 +79,7 @@ public class Tuple implements Serializable {
     public Field getField(int i) {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-28 12:02:22
-        return this.fields.get(i);
+        return this.fields[i];
     }
 
     /**
@@ -94,8 +94,8 @@ public class Tuple implements Serializable {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-28 16:29:35
         StringBuilder sb = new StringBuilder();
-        for(int i=0;i<this.fields.size();i++){
-            sb.append(this.fields.get(i).toString()+" ");
+        for(int i=0;i<this.fields.length;i++){
+            sb.append(this.fields[i].toString()+" ");
         }
         sb.append("\n");
         return sb.toString();
@@ -107,7 +107,7 @@ public class Tuple implements Serializable {
     public Iterator<Field> fields() {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-28 16:30:33
-        return this.fields.iterator();
+        return (Iterator<Field>) Arrays.asList(fields).iterator();
     }
 
     /**

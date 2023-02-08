@@ -7,6 +7,7 @@ import simpledb.common.Debug;
 import simpledb.transaction.TransactionId;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -76,7 +77,8 @@ public class HeapPage implements Page {
      */
     private int getNumTuples() {
         // TODO: some code goes here
-        return 0;
+        // Done by Huangyihang in 2023-02-07 19:55:08
+        return (int) Math.floor((BufferPool.getPageSize() * 8 * 1.0) / ( this.td.getSize() * 8 + 1));
 
     }
 
@@ -88,7 +90,8 @@ public class HeapPage implements Page {
     private int getHeaderSize() {
 
         // TODO: some code goes here
-        return 0;
+        // Done by Huangyihang in 2023-02-07 19:58:39
+        return (int) Math.ceil(this.getNumTuples() / 8.0);
 
     }
 
@@ -122,7 +125,8 @@ public class HeapPage implements Page {
      */
     public HeapPageId getId() {
         // TODO: some code goes here
-        throw new UnsupportedOperationException("implement this");
+        // Done by Huangyihang in 2023-02-07 19:59:10
+        return this.pid;
     }
 
     /**
@@ -294,7 +298,14 @@ public class HeapPage implements Page {
      */
     public int getNumUnusedSlots() {
         // TODO: some code goes here
-        return 0;
+        // Done by Huangyihang in 2023-02-07 20:04:32
+        int cnt = 0;
+        for (int i = 0; i < this.numSlots; i++) {
+            if (!isSlotUsed(i)) {
+                ++cnt;
+            }
+        }
+        return cnt;
     }
 
     /**
@@ -302,7 +313,13 @@ public class HeapPage implements Page {
      */
     public boolean isSlotUsed(int i) {
         // TODO: some code goes here
-        return false;
+        // Done by Huangyihang in 2023-02-07 20:07:54
+        // 根据提示用位图实现
+        int quot = i / 8;
+        int remain = i % 8;
+        int bitidx = this.header[quot];
+        int bit = (bitidx >> remain) & 1;
+        return bit == 1;
     }
 
     /**
@@ -319,7 +336,14 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-02-07 20:28:51
+        ArrayList<Tuple> filledTuples = new ArrayList<>();
+        for (int i = 0; i < this.numSlots; i++) {
+            if (isSlotUsed(i)) {
+                filledTuples.add(tuples[i]);
+            }
+        }
+        return (Iterator<Tuple>) filledTuples.iterator();
     }
 
 }

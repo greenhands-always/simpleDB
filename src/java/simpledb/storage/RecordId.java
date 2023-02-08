@@ -9,7 +9,8 @@ import java.io.Serializable;
 public class RecordId implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
+    private PageId pageId;
+    private int tupleNumber;
     /**
      * Creates a new RecordId referring to the specified PageId and tuple
      * number.
@@ -19,6 +20,9 @@ public class RecordId implements Serializable {
      */
     public RecordId(PageId pid, int tupleno) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-07 17:54:21
+        this.pageId = pid;
+        this.tupleNumber = tupleno;
     }
 
     /**
@@ -26,7 +30,8 @@ public class RecordId implements Serializable {
      */
     public int getTupleNumber() {
         // TODO: some code goes here
-        return 0;
+        // Done by Huangyihang in 2023-02-07 17:54:43
+        return this.tupleNumber;
     }
 
     /**
@@ -34,7 +39,8 @@ public class RecordId implements Serializable {
      */
     public PageId getPageId() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-02-07 17:54:50
+        return this.pageId;
     }
 
     /**
@@ -46,7 +52,12 @@ public class RecordId implements Serializable {
     @Override
     public boolean equals(Object o) {
         // TODO: some code goes here
-        throw new UnsupportedOperationException("implement this");
+        // Done by Huangyihang in 2023-02-07 17:58:53
+        if(this == o) return true;
+        if(o == null) return false;
+        if(o instanceof RecordId)
+            return ((RecordId) o).getPageId().equals(this.pageId) && ((RecordId) o).getTupleNumber() == this.tupleNumber;
+        return false;
     }
 
     /**
@@ -58,7 +69,9 @@ public class RecordId implements Serializable {
     @Override
     public int hashCode() {
         // TODO: some code goes here
-        throw new UnsupportedOperationException("implement this");
+        // Done by Huangyihang in 2023-02-07 18:01:23
+        String s = pageId.hashCode()+""+tupleNumber;
+        return s.hashCode();
 
     }
 

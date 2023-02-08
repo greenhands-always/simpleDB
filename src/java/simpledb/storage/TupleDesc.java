@@ -106,8 +106,9 @@ public class TupleDesc implements Serializable {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-27 23:09:30
         if (i <= 0 || i > this.tdItems.size()) {
-            throw new NoSuchElementException();
-        } else {
+            throw new NoSuchElementException("pos " + i + " is not a valid index");
+        }
+        else {
             return this.tdItems.get(i).fieldName;
         }
     }
@@ -123,8 +124,8 @@ public class TupleDesc implements Serializable {
     public Type getFieldType(int i) throws NoSuchElementException {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-27 23:09:56
-        if (i <= 0 || i > this.tdItems.size()) {
-            throw new NoSuchElementException();
+        if (i < 0 || i > this.tdItems.size()) {
+            throw new NoSuchElementException("pos " + i + " is not a valid index");
         } else {
             return this.tdItems.get(i).fieldType;
         }
@@ -173,10 +174,17 @@ public class TupleDesc implements Serializable {
     public static TupleDesc merge(TupleDesc td1, TupleDesc td2) {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-28 10:53
-        TupleDesc newTupleDesc = new TupleDesc(null, null);
-        newTupleDesc.tdItems.addAll(td1.tdItems);
-        newTupleDesc.tdItems.addAll(td2.tdItems);
-        return null;
+        Type[] typeAr = new Type[td1.numFields() + td2.numFields()];
+        String[] fieldAr = new String[td1.numFields() + td2.numFields()];
+        for(int i = 0;i < td1.numFields(); ++i){
+            typeAr[i] = td1.tdItems.get(i).fieldType;
+            fieldAr[i] = td1.tdItems.get(i).fieldName;
+        }
+        for(int i = 0;i < td2.numFields(); ++i){
+            typeAr[i+td1.numFields()] = td2.tdItems.get(i).fieldType;
+            fieldAr[i+td1.numFields()] = td2.tdItems.get(i).fieldName;
+        }
+        return new TupleDesc(typeAr,fieldAr);
     }
 
     /**

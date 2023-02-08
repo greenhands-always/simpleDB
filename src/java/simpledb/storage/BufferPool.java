@@ -4,6 +4,7 @@ import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.DeadlockException;
 import simpledb.common.Permissions;
+import simpledb.transaction.LockManager;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
@@ -37,7 +38,9 @@ public class BufferPool {
      * constructor instead.
      */
     public static final int DEFAULT_PAGES = 50;
-
+    private int numPages;
+    private ConcurrentMap<Integer,Page> pages;
+    private LockManager lockManager;
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -45,6 +48,10 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-01-30 16:57:20
+        this.pages = new ConcurrentHashMap<>();
+        this.numPages=numPages;
+        this.lockManager= new LockManager();
     }
 
     public static int getPageSize() {
@@ -73,13 +80,34 @@ public class BufferPool {
      * should be added in its place.
      *
      * @param tid  the ID of the transaction requesting the page
+     * @param tid  the ID of the transaction requesting the page
      * @param pid  the ID of the requested page
      * @param perm the requested permissions on the page
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
             throws TransactionAbortedException, DbException {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-02-05 11:28:26
+        boolean lockAcquired = false;
+        long startTime = System.currentTimeMillis();
+        long timeout = new Random().nextInt(3000);
+        while(!lockAcquired){
+            long now = System.currentTimeMillis();
+            if(now - startTime> timeout){
+                throw new TransactionAbortedException();
+            }
+            lockAcquired = lockManager.acquireLock(tid,pid,perm);
+        }
+
+        if(this.pages.get(pid)==null){
+            DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+            Page page = dbFile.readPage(pid);
+            if(this.pages.size()>=this.numPages){
+                evictPage();
+            }
+            this.pages.put(pid.getPageNumber(), Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
+        }
+        return this.pages.get(pid.getPageNumber());
     }
 
     /**
