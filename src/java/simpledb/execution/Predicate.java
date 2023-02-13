@@ -48,6 +48,9 @@ public class Predicate implements Serializable {
 
     }
 
+    private int field;
+    private Op op;
+    private Field operand;
     /**
      * Constructor.
      *
@@ -57,6 +60,10 @@ public class Predicate implements Serializable {
      */
     public Predicate(int field, Op op, Field operand) {
         // TODO: some code goes here
+        // Done by Huangyihang in 2023-02-13 10:48:03
+        this.field = field;
+        this.op = op;
+        this.operand = operand;
     }
 
     /**
@@ -64,7 +71,8 @@ public class Predicate implements Serializable {
      */
     public int getField() {
         // TODO: some code goes here
-        return -1;
+        // Done by Huangyihang in 2023-02-13 10:48:18
+        return this.field;
     }
 
     /**
@@ -72,7 +80,8 @@ public class Predicate implements Serializable {
      */
     public Op getOp() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-02-13 10:48:29
+        return this.op;
     }
 
     /**
@@ -80,7 +89,8 @@ public class Predicate implements Serializable {
      */
     public Field getOperand() {
         // TODO: some code goes here
-        return null;
+        // Done by Huangyihang in 2023-02-13 10:48:39
+        return this.operand;
     }
 
     /**
@@ -94,7 +104,8 @@ public class Predicate implements Serializable {
      */
     public boolean filter(Tuple t) {
         // TODO: some code goes here
-        return false;
+        // Done by Huangyihang in 2023-02-13 10:52:35
+        return t.getField(this.field).compare(this.op, this.operand);
     }
 
     /**
@@ -103,6 +114,7 @@ public class Predicate implements Serializable {
      */
     public String toString() {
         // TODO: some code goes here
-        return "";
+        // Done by Huangyihang in 2023-02-13 10:52:54
+        return "f=" + this.field + " op=" + this.op + " operand=" + this.operand + "";
     }
 }
