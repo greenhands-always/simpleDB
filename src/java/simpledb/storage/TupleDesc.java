@@ -105,7 +105,7 @@ public class TupleDesc implements Serializable {
     public String getFieldName(int i) throws NoSuchElementException {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-27 23:09:30
-        if (i <= 0 || i > this.tdItems.size()) {
+        if (i < 0 || i > this.tdItems.size()) {
             throw new NoSuchElementException("pos " + i + " is not a valid index");
         }
         else {
