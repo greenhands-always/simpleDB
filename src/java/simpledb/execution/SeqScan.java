@@ -112,7 +112,7 @@ public class SeqScan implements OpIterator {
         // Done by Huangyihang in 2023-02-08 11:43:14
         if(this.iterator == null)
             return false;
-        return iterator.hasNext();
+        return this.iterator.hasNext();
     }
 
     public Tuple next() throws NoSuchElementException,
@@ -121,7 +121,10 @@ public class SeqScan implements OpIterator {
         // Done by Huangyihang in 2023-02-08 11:43:59
         if(this.iterator == null)
             throw new NoSuchElementException("no such element next");
-        return null;
+        Tuple tuple = this.iterator.next();
+        if(tuple == null)
+            throw new NoSuchElementException("No next tuple");
+        return tuple;
     }
 
     public void close() {

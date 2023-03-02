@@ -16,7 +16,7 @@ import java.util.NoSuchElementException;
 public class Aggregate extends Operator {
 
     private static final long serialVersionUID = 1L;
-    private OpIterator tupIterator;
+    private OpIterator childIterator;
     private int aggrField;
     private int groupField;
     private Aggregator.Op aop;
@@ -39,14 +39,11 @@ public class Aggregate extends Operator {
     public Aggregate(OpIterator child, int afield, int groupField, Aggregator.Op aop) {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-14 20:00:00
-        this.tupIterator = child;
+        this.childIterator = child;
         this.aggrField = afield;
         this.groupField = groupField;
         this.aop = aop;
-        Type gbFieldType = null;
-        if(groupField != Aggregator.NO_GROUPING){
-            gbFieldType = child.getTupleDesc().getFieldType(groupField);
-        }
+        Type gbFieldType = groupField == -1 ? null : child.getTupleDesc().getFieldType(groupField);
         switch (child.getTupleDesc().getFieldType(afield)){
             case INT_TYPE:
                 aggregator = new IntegerAggregator(groupField, gbFieldType, afield, aop);
@@ -57,15 +54,7 @@ public class Aggregate extends Operator {
             default:
                 throw new IllegalArgumentException("unsupported type");
         }
-        try{
-            child.open();
-            while (child.hasNext()){
-                aggregator.mergeTupleIntoGroup(child.next());
-            }
-            child.close();
-        }catch (DbException | TransactionAbortedException e){
-            e.printStackTrace();
-        }
+        this.resIterator = null;
 
     }
 
@@ -91,7 +80,7 @@ public class Aggregate extends Operator {
         if(this.groupField == Aggregator.NO_GROUPING)
             return null;
         else
-            return this.tupIterator.getTupleDesc().getFieldName(groupField);
+            return this.childIterator.getTupleDesc().getFieldName(groupField);
     }
 
     /**
@@ -110,7 +99,7 @@ public class Aggregate extends Operator {
     public String aggregateFieldName() {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-14 20:03:51
-        return this.tupIterator.getTupleDesc().getFieldName(aggrField);
+        return this.childIterator.getTupleDesc().getFieldName(aggrField);
     }
 
     /**
@@ -130,9 +119,15 @@ public class Aggregate extends Operator {
             TransactionAbortedException {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-14 20:05:15
-        this.resIterator = aggregator.iterator();
-        this.resIterator.open();
         super.open();
+        childIterator.open();
+        while (childIterator.hasNext()) {
+            aggregator.mergeTupleIntoGroup(childIterator.next());
+        }
+        this.childIterator.close();
+        resIterator = aggregator.iterator();
+        resIterator.open();
+
     }
 
     /**
@@ -145,7 +140,7 @@ public class Aggregate extends Operator {
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-14 20:06:48
-        if(this.resIterator!=null && resIterator.hasNext())
+        if(resIterator.hasNext())
             return this.resIterator.next();
         else
             return null;
@@ -174,10 +169,10 @@ public class Aggregate extends Operator {
         // Done by Huangyihang in 2023-02-14 20:08:32
         if (this.groupField == Aggregator.NO_GROUPING)
             return new TupleDesc(new Type[]{Type.INT_TYPE},
-                    new String[]{this.aop.toString() + "(" + this.tupIterator.getTupleDesc().getFieldName(aggrField) + ")"});
+                    new String[]{this.aop.toString() + "(" + this.childIterator.getTupleDesc().getFieldName(aggrField) + ")"});
         else
-            return new TupleDesc(new Type[]{this.tupIterator.getTupleDesc().getFieldType(groupField), Type.INT_TYPE},
-                    new String[]{this.tupIterator.getTupleDesc().getFieldName(groupField), this.aop.toString() + "(" + this.tupIterator.getTupleDesc().getFieldName(aggrField) + ")"});
+            return new TupleDesc(new Type[]{this.childIterator.getTupleDesc().getFieldType(groupField), Type.INT_TYPE},
+                    new String[]{this.childIterator.getTupleDesc().getFieldName(groupField), this.aop.toString() + "(" + this.childIterator.getTupleDesc().getFieldName(aggrField) + ")"});
 
     }
 
@@ -192,7 +187,7 @@ public class Aggregate extends Operator {
     public OpIterator[] getChildren() {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-14 20:10:44
-        return new OpIterator[]{this.tupIterator};
+        return new OpIterator[]{this.childIterator};
     }
 
     @Override
@@ -200,12 +195,12 @@ public class Aggregate extends Operator {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-14 20:18:04
         try{
-            this.tupIterator = children[0];
-            this.tupIterator.open();
-            while (tupIterator.hasNext()){
-                aggregator.mergeTupleIntoGroup(tupIterator.next());
+            this.childIterator = children[0];
+            this.childIterator.open();
+            while (childIterator.hasNext()){
+                aggregator.mergeTupleIntoGroup(childIterator.next());
             }
-            this.tupIterator.close();
+            this.childIterator.close();
         } catch (TransactionAbortedException |DbException e) {
             throw new RuntimeException(e);
         }
