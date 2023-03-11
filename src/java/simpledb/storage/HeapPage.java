@@ -260,6 +260,17 @@ public class HeapPage implements Page {
     public void deleteTuple(Tuple t) throws DbException {
         // TODO: some code goes here
         // not necessary for lab1
+        // Done by Huangyihang in 2023-02-17 10:51:22
+        RecordId recordId = t.getRecordId();
+        int slotId = recordId.getTupleNumber();
+        if (recordId.getPageId() != this.pid || !isSlotUsed(slotId)) {
+            throw new DbException("tuple is not in this page");
+        }
+        // 将tuple对应的slot置为0
+        markSlotUsed(slotId, false);
+        // 将slot对应的tuple置为null
+        tuples[slotId] = null;
+
     }
 
     /**
@@ -273,8 +284,23 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // TODO: some code goes here
         // not necessary for lab1
+        if (getNumUnusedSlots() == 0) throw new DbException("Not enough space to insert tuple");
+        if (td.equals(t.getTupleDesc())) {
+            for (int i = 0; i < numSlots; i++) {
+                if (!isSlotUsed(i)) {
+                    markSlotUsed(i, true);
+                    tuples[i] = t;
+                    t.setRecordId(new RecordId(pid, i));
+                    return;
+                }
+            }
+            throw new DbException("insertTuple: Error: no tuple is inserted");
+        }
+        throw new DbException("insertTuple: no empty slots or tupledesc is mismatch");
     }
 
+    private boolean dirty;
+    private TransactionId transactionId;
     /**
      * Marks this page as dirty/not dirty and record that transaction
      * that did the dirtying
@@ -282,6 +308,13 @@ public class HeapPage implements Page {
     public void markDirty(boolean dirty, TransactionId tid) {
         // TODO: some code goes here
         // not necessary for lab1
+        if (dirty) {
+            this.dirty = dirty;
+            this.transactionId = tid;
+        } else {
+            this.dirty = false;
+            this.transactionId = null;
+        }
     }
 
     /**
@@ -290,7 +323,10 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // TODO: some code goes here
         // Not necessary for lab1
-        return null;      
+        if (dirty) {
+            return transactionId;
+        }
+        return null;
     }
 
     /**
@@ -315,11 +351,13 @@ public class HeapPage implements Page {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-07 20:07:54
         // 根据提示用位图实现
-        int quot = i / 8;
-        int remain = i % 8;
-        int bitidx = this.header[quot];
-        int bit = (bitidx >> remain) & 1;
-        return bit == 1;
+//        int quot = i / 8;
+//        int remain = i % 8;
+//        int bitidx = this.header[quot];
+//        int bit = (bitidx >> remain) & 1;
+//        return bit == 1;
+        int index = i / 8, offset = i % 8;
+        return (header[index] & (1 << offset)) != 0;
     }
 
     /**
@@ -328,6 +366,17 @@ public class HeapPage implements Page {
     private void markSlotUsed(int i, boolean value) {
         // TODO: some code goes here
         // not necessary for lab1
+        if (i < numSlots) {
+            int hdNo = i / 8;
+            int offset = i % 8;
+
+            byte mask = (byte) (0x1 << offset);
+            if (value) {
+                header[hdNo] |= mask;
+            } else {
+                header[hdNo] &= ~mask;
+            }
+        }
     }
 
     /**

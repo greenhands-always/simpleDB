@@ -39,7 +39,7 @@ public class BufferPool {
      */
     public static final int DEFAULT_PAGES = 50;
     private int numPages;
-    private ConcurrentMap<Integer,Page> pages;
+    private ConcurrentMap<PageId,Page> pages;
     private LockManager lockManager;
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -88,16 +88,6 @@ public class BufferPool {
             throws TransactionAbortedException, DbException {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-05 11:28:26
-        boolean lockAcquired = false;
-        long startTime = System.currentTimeMillis();
-        long timeout = new Random().nextInt(3000);
-        while(!lockAcquired){
-            long now = System.currentTimeMillis();
-            if(now - startTime> timeout){
-                throw new TransactionAbortedException();
-            }
-            lockAcquired = lockManager.acquireLock(tid,pid,perm);
-        }
 
         if(this.pages.get(pid)==null){
             DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
@@ -105,9 +95,9 @@ public class BufferPool {
             if(this.pages.size()>=this.numPages){
                 evictPage();
             }
-            this.pages.put(pid.getPageNumber(), Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid));
+            this.pages.put(pid, page);
         }
-        return this.pages.get(pid.getPageNumber());
+        return this.pages.get(pid);
     }
 
     /**
@@ -174,6 +164,12 @@ public class BufferPool {
             throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
         // not necessary for lab1
+        DbFile databaseFile = Database.getCatalog().getDatabaseFile(tableId);
+        List<Page> afterModified = databaseFile.insertTuple(tid, t);
+        for (Page page : afterModified) {    //用脏页替换buffer中现有的页
+            page.markDirty(true, tid);
+            pages.put(page.getId(), page);
+        }
     }
 
     /**
@@ -193,6 +189,13 @@ public class BufferPool {
             throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
         // not necessary for lab1
+        PageId pageId = t.getRecordId().getPageId();
+        int tableId = pageId.getTableId();
+        DbFile databaseFile = Database.getCatalog().getDatabaseFile(tableId);
+        List<Page> pages = databaseFile.deleteTuple(tid, t);
+        for (int i = 0; i < pages.size(); i++) {
+            pages.get(i).markDirty(true, tid);
+        }
     }
 
     /**
@@ -245,6 +248,7 @@ public class BufferPool {
     private synchronized void evictPage() throws DbException {
         // TODO: some code goes here
         // not necessary for lab1
+        throw new DbException("Cannot evict");
     }
 
 }

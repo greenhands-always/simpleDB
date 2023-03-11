@@ -22,7 +22,7 @@ public class LockManager {
      */
     public synchronized  Boolean acquireLock(TransactionId tid, PageId pageId, Permissions permissions){
         Lock lock = new Lock(tid, permissions);
-        int pid = pageId.getPageNumber();
+        int pid = pageId.getTableId();
         ArrayList<Lock> locks = mapPageLocks.get(pid);
         // 页面没有锁则创建锁
         if(locks==null || locks.size()==0){
@@ -56,7 +56,7 @@ public class LockManager {
             return false;
         }
 
-        //每一个事物读锁并不需要重复获取
+        //该事务如果
         for(Lock l: locks){
             if(l.getTransactionId().equals(lock.getTransactionId())){
                 return true;
@@ -65,15 +65,13 @@ public class LockManager {
         locks.add(lock);
         return true;
     }
-
-
     /**
      * 释放锁
      * @param tid
      * @param pageId
      */
     public synchronized  void releaseLock(TransactionId tid,PageId pageId){
-        int pid = pageId.getPageNumber();
+        int pid = pageId.getTableId();
         ArrayList<Lock> locks = mapPageLocks.get(pid);
         for(Lock l:locks){
             if(l.getTransactionId().equals(tid)){
