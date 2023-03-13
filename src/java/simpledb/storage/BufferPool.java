@@ -7,7 +7,7 @@ import simpledb.common.Permissions;
 import simpledb.transaction.LockManager;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-
+import simpledb.storage.LRUCache;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,7 +39,7 @@ public class BufferPool {
      */
     public static final int DEFAULT_PAGES = 50;
     private int numPages;
-    private ConcurrentMap<PageId,Page> pages;
+    private LRUCache<PageId,Page> pages;
     private LockManager lockManager;
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -49,7 +49,7 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-30 16:57:20
-        this.pages = new ConcurrentHashMap<>();
+        this.pages = new LRUCache<>(numPages/5);
         this.numPages=numPages;
         this.lockManager= new LockManager();
     }
@@ -92,10 +92,11 @@ public class BufferPool {
         if(this.pages.get(pid)==null){
             DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
             Page page = dbFile.readPage(pid);
-            if(this.pages.size()>=this.numPages){
+            if(this.pages.getSize()>=this.numPages/5){
                 evictPage();
             }
             this.pages.put(pid, page);
+            return page;
         }
         return this.pages.get(pid);
     }
@@ -206,7 +207,28 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // TODO: some code goes here
         // not necessary for lab1
+        LRUCache<PageId, Page>.DLinkNode head = pages.getHead();
+        LRUCache<PageId, Page>.DLinkNode tail = pages.getTail();
+        while (head != tail) {
+            Page value = head.value;
+            if (value != null && value.isDirty() != null) {
 
+                DbFile databaseFile = Database.getCatalog().getDatabaseFile(value.getId().getTableId());
+                try {
+                    Database.getLogFile().logWrite(value.isDirty(), value.getBeforeImage(), value);
+                    Database.getLogFile().force();
+                    //这里不能将脏页标记为不脏，如果这样做则当事务提交的时候，flushpage函数找不到脏页，无法将更新写入磁盘
+                    //也无法setbeforeimage 详情见LogTest的78行
+                    // value.markDirty(false, null);
+                    databaseFile.writePage(value);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+            head = head.next;
+        }
     }
 
     /**
@@ -221,6 +243,18 @@ public class BufferPool {
     public synchronized void removePage(PageId pid) {
         // TODO: some code goes here
         // not necessary for lab1
+
+        LRUCache<PageId, Page>.DLinkNode head = pages.getHead();
+        LRUCache<PageId, Page>.DLinkNode tail = pages.getTail();
+        while (head != tail) {
+            PageId key = head.key;
+            if (key != null && key.equals(pid)) {
+                pages.remove(head);
+                return;
+            }
+            head = head.next;
+        }
+
     }
 
     /**
@@ -231,6 +265,19 @@ public class BufferPool {
     private synchronized void flushPage(PageId pid) throws IOException {
         // TODO: some code goes here
         // not necessary for lab1
+        Page discard = pages.get(pid);
+        DbFile databaseFile = Database.getCatalog().getDatabaseFile(discard.getId().getTableId());
+        try {
+            TransactionId dirtier = discard.isDirty();
+            if (dirtier != null) {
+                Database.getLogFile().logWrite(dirtier, discard.getBeforeImage(), discard);
+                Database.getLogFile().force();
+                discard.markDirty(false, null);
+                databaseFile.writePage(discard);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -248,7 +295,25 @@ public class BufferPool {
     private synchronized void evictPage() throws DbException {
         // TODO: some code goes here
         // not necessary for lab1
-        throw new DbException("Cannot evict");
+        //如果为脏页则不能替换
+        Page value = pages.getTail().prev.value;
+        //  如果是脏页
+        if (value != null && value.isDirty() != null) {
+            LRUCache<PageId, Page>.DLinkNode head = pages.getHead();
+            LRUCache<PageId, Page>.DLinkNode tail = pages.getTail();
+            tail = tail.prev;
+            while (head != tail) {
+                Page page = tail.value;
+                if (page != null && page.isDirty() == null) {
+                    pages.remove(tail);
+                    return;
+                }
+                tail = tail.prev;
+            }
+        } else {
+            //不是脏页没改过，不需要写磁盘
+            pages.discard();
+        }
     }
 
 }
