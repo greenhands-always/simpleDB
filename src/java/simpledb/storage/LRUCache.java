@@ -17,6 +17,7 @@ public class LRUCache<Key,Value> {
     private Map<Key,DLinkNode> cache = new ConcurrentHashMap<>();
     private int size;
     private int capacity;
+
     private DLinkNode head,tail;
     public LRUCache(int capacity){
         this.size = 0;

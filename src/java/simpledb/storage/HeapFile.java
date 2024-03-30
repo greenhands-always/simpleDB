@@ -139,37 +139,6 @@ public class HeapFile implements DbFile {
             throws DbException, IOException, TransactionAbortedException {
         // TODO: some code goes here
         // not necessary for lab1
-//        if (!getFile().canRead() || !getFile().canWrite()) {
-//            throw new IOException();
-//        }
-//        List<Page> res = new ArrayList<>();
-//        for(int i=0;i<numPages();i++){
-//            HeapPageId heapPageId = new HeapPageId(getId(),i);
-//            HeapPage heapPage = (HeapPage) Database.getBufferPool().getPage(tid,heapPageId,Permissions.READ_WRITE);
-//            if(heapPage==null){
-//                Database.getBufferPool().unsafeReleasePage(tid,heapPageId);
-//                continue;
-//            }
-//            if(heapPage.getNumUnusedSlots()==0){
-//                Database.getBufferPool().unsafeReleasePage(tid,heapPageId);
-//                continue;
-//            }
-//            heapPage.insertTuple(t);
-//            heapPage.markDirty(true,tid);
-//            res.add(heapPage);
-//            return res;
-//        }
-//        //所有页面都满才会执行到这里,新建一个page
-//        BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(f, true));
-//        byte[] emptyPageData = HeapPage.createEmptyPageData();
-//        // 向文件末尾添加数据
-//        outputStream.write(emptyPageData);
-//        outputStream.close();
-//        // 加载到缓存中,使用numPages() - 1是因为此时numPages()已经变为插入后的大小了
-//        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(getId(), numPages() - 1), Permissions.READ_WRITE);
-//        page.insertTuple(t);
-//        res.add(page);
-//        return res;
         if (!getFile().canRead() || !getFile().canWrite()) {
             throw new IOException();
         }

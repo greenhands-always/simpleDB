@@ -4,6 +4,7 @@ import simpledb.common.Permissions;
 import simpledb.storage.PageId;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LockManager {
@@ -22,8 +23,7 @@ public class LockManager {
      */
     public synchronized  Boolean acquireLock(TransactionId tid, PageId pageId, Permissions permissions){
         Lock lock = new Lock(tid, permissions);
-        int pid = pageId.getTableId();
-        ArrayList<Lock> locks = mapPageLocks.get(pid);
+        ArrayList<Lock> locks = mapPageLocks.get(pageId);
         // 页面没有锁则创建锁
         if(locks==null || locks.size()==0){
             locks = new ArrayList<>();
@@ -71,13 +71,12 @@ public class LockManager {
      * @param pageId
      */
     public synchronized  void releaseLock(TransactionId tid,PageId pageId){
-        int pid = pageId.getTableId();
-        ArrayList<Lock> locks = mapPageLocks.get(pid);
+        ArrayList<Lock> locks = mapPageLocks.get(pageId);
         for(Lock l:locks){
             if(l.getTransactionId().equals(tid)){
                 locks.remove(l);
                 if(locks.size()==0){
-                    mapPageLocks.remove(pid);
+                    mapPageLocks.remove(pageId);
                 }
                 return;
             }
@@ -103,6 +102,16 @@ public class LockManager {
         }
     }
 
+    public synchronized Boolean holdsLock(TransactionId tid, PageId p) {
+        List<Lock> locks = mapPageLocks.get(p.getPageNumber());
+        for (int i = 0; i < locks.size(); i++) {
+            Lock lock = locks.get(i);
+            if (lock.getTransactionId().equals(tid)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 
 

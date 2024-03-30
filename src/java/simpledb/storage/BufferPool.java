@@ -49,7 +49,7 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-01-30 16:57:20
-        this.pages = new LRUCache<>(numPages/5);
+        this.pages = new LRUCache<>(numPages);
         this.numPages=numPages;
         this.lockManager= new LockManager();
     }
@@ -89,10 +89,20 @@ public class BufferPool {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-05 11:28:26
 
+        boolean lockAcquired = false;
+        long start = System.currentTimeMillis();
+        long timeout = new Random().nextInt(1000) + 1000;
+        while (!lockAcquired) {
+            long now = System.currentTimeMillis();
+            if (now - start > timeout) {
+                throw new TransactionAbortedException();
+            }
+            lockAcquired = lockManager.acquireLock(tid, pid, perm);
+        }
         if(this.pages.get(pid)==null){
             DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
             Page page = dbFile.readPage(pid);
-            if(this.pages.getSize()>=this.numPages/5){
+            if(this.pages.getSize()>=this.numPages){
                 evictPage();
             }
             this.pages.put(pid, page);
@@ -113,6 +123,7 @@ public class BufferPool {
     public void unsafeReleasePage(TransactionId tid, PageId pid) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
+        lockManager.releaseLock(tid, pid);
     }
 
     /**
@@ -123,6 +134,7 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
+        transactionComplete(tid, true);
     }
 
     /**
@@ -131,7 +143,7 @@ public class BufferPool {
     public boolean holdsLock(TransactionId tid, PageId p) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
-        return false;
+        return lockManager.holdsLock(tid, p);
     }
 
     /**
@@ -144,6 +156,16 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid, boolean commit) {
         // TODO: some code goes here
         // not necessary for lab1|lab2
+        if (commit) {
+            try {
+                flushPages(tid);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            rollback(tid);
+        }
+        lockManager.releaseAllLock(tid);
     }
 
     /**
@@ -286,6 +308,46 @@ public class BufferPool {
     public synchronized void flushPages(TransactionId tid) throws IOException {
         // TODO: some code goes here
         // not necessary for lab1|lab2
+        LRUCache<PageId, Page>.DLinkNode head = pages.getHead();
+        LRUCache<PageId, Page>.DLinkNode tail = pages.getTail();
+        while (head != tail) {
+            Page value = head.value;
+            if (value != null && value.isDirty() != null && value.isDirty().equals(tid)) {
+                DbFile databaseFile = Database.getCatalog().getDatabaseFile(value.getId().getTableId());
+                try {
+                    Database.getLogFile().logWrite(value.isDirty(), value.getBeforeImage(), value);
+                    Database.getLogFile().force();
+                    value.markDirty(false, null);
+                    databaseFile.writePage(value);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            head = head.next;
+        }
+    }
+
+    private synchronized void rollback(TransactionId transactionId) {
+        LRUCache<PageId, Page>.DLinkNode head = pages.getHead();
+        LRUCache<PageId, Page>.DLinkNode tail = pages.getTail();
+        while (head != tail) {
+            Page value = head.value;
+            LRUCache<PageId, Page>.DLinkNode tmp = head.next;
+            if (value != null && value.isDirty() != null && value.isDirty().equals(transactionId)) {
+                //删掉脏页
+                pages.remove(head);
+                try {
+                    //重新读原来的页
+                    Page page = Database.getBufferPool().getPage(transactionId, value.getId(), Permissions.READ_ONLY);
+                    page.markDirty(false,null);
+                } catch (TransactionAbortedException e) {
+                    e.printStackTrace();
+                } catch (DbException e) {
+                    e.printStackTrace();
+                }
+            }
+            head = tmp;
+        }
     }
 
     /**

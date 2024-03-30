@@ -17,6 +17,8 @@ public class Join extends Operator {
     private OpIterator child1;
     private OpIterator child2;
     private Tuple temp = null;
+    private TupleDesc newTupleDesc = null;
+
     /**
      * Constructor. Accepts two children to join and the predicate to join them
      * on
@@ -31,6 +33,7 @@ public class Join extends Operator {
         this.p = p;
         this.child1 = child1;
         this.child2 = child2;
+        newTupleDesc = TupleDesc.merge(child1.getTupleDesc(), child2.getTupleDesc());
     }
 
     public JoinPredicate getJoinPredicate() {
@@ -41,7 +44,7 @@ public class Join extends Operator {
 
     /**
      * @return the field name of join field1. Should be quantified by
-     *         alias or table name.
+     * alias or table name.
      */
     public String getJoinField1Name() {
         // TODO: some code goes here
@@ -51,7 +54,7 @@ public class Join extends Operator {
 
     /**
      * @return the field name of join field2. Should be quantified by
-     *         alias or table name.
+     * alias or table name.
      */
     public String getJoinField2Name() {
         // TODO: some code goes here
@@ -61,7 +64,7 @@ public class Join extends Operator {
 
     /**
      * @see TupleDesc#merge(TupleDesc, TupleDesc) for possible
-     *         implementation logic.
+     * implementation logic.
      */
     public TupleDesc getTupleDesc() {
         // TODO: some code goes here
@@ -116,17 +119,16 @@ public class Join extends Operator {
         // TODO: some code goes here
         // Done by Huangyihang in 2023-02-13 16:47:09
         // temp用于保存child1的元组，遍历完child2后置空，准备遍历下一个child1的元组
-        while (child1.hasNext() || temp != null){
-            if(child1.hasNext() && temp == null){
+        TupleDesc td1 = this.child1.getTupleDesc();
+        TupleDesc td2 = this.child2.getTupleDesc();
+        while (child1.hasNext() || temp != null) {
+            if (child1.hasNext() && temp == null) {
                 temp = child1.next();
             }
-            while(child2.hasNext()){
+            while (child2.hasNext()) {
                 Tuple t2 = child2.next();
-                if(this.p.filter(temp, t2)){
-                    TupleDesc td1 = temp.getTupleDesc();
-                    TupleDesc td2 = t2.getTupleDesc();
-                    TupleDesc tupleDesc = TupleDesc.merge(td1, td2);
-                    Tuple newTuple = new Tuple(tupleDesc);
+                if (this.p.filter(temp, t2)) {
+                    Tuple newTuple = new Tuple(newTupleDesc);
                     newTuple.setRecordId(temp.getRecordId());
                     int i = 0;
                     for (; i < td1.numFields(); i++) {
@@ -136,7 +138,7 @@ public class Join extends Operator {
                         newTuple.setField(i + j, t2.getField(j));
                     }
                     // 遍历完t2后重置，t置空，准备遍历下一个
-                    if(!child2.hasNext()){
+                    if (!child2.hasNext()) {
                         child2.rewind();
                         temp = null;
                     }

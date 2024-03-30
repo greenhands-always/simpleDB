@@ -105,7 +105,8 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            return card1*cost2 + card2 + cost1 + cost2;
+//            return -1.0;
         }
     }
 
@@ -145,7 +146,18 @@ public class JoinOptimizer {
                                                    Map<String, Integer> tableAliasToId) {
         int card = 1;
         // TODO: some code goes here
-        return card <= 0 ? 1 : card;
+        if (joinOp == Predicate.Op.EQUALS) {
+            if (t1pkey) {
+                card = card2;
+            } else if (t2pkey) {
+                card = card1;
+            } else {
+                card = Math.max(card1, card2);
+            }
+        } else {
+            card =  card1*card2*10/3;
+        }
+        return card ;
     }
 
     /**
@@ -198,10 +210,37 @@ public class JoinOptimizer {
             Map<String, TableStats> stats,
             Map<String, Double> filterSelectivities, boolean explain)
             throws ParsingException {
-        // Not necessary for labs 1 and 2.
 
         // TODO: some code goes here
+        CostCard bestCostCard = new CostCard();
+        PlanCache planCache = new PlanCache();
+        for (int i = 1; i <= joins.size(); i++) {
+            Set<Set<LogicalJoinNode>> subsets = enumerateSubsets(joins, i);
+            for (Set<LogicalJoinNode> set : subsets) {
+                double bestCostSoFar = Double.MAX_VALUE;
+                bestCostCard = new CostCard();
+                for (LogicalJoinNode logicalJoinNode : set) {
+                    //根据子计划找出最优的方案
+                    CostCard costCard = computeCostAndCardOfSubplan(stats, filterSelectivities, logicalJoinNode, set, bestCostSoFar, planCache);
+                    if (costCard == null) continue;
+                    bestCostSoFar = costCard.cost;
+                    bestCostCard = costCard;
+                }
+                if (bestCostSoFar != Double.MAX_VALUE) {
+                    planCache.addPlan(set, bestCostCard.cost, bestCostCard.card, bestCostCard.plan);
+                }
+            }
+        }
+        if (explain){
+            printJoins(bestCostCard.plan, planCache, stats, filterSelectivities);
+        }
+
+        // 如果joins传进来的长度为0，则计划就为空
+        if(bestCostCard.plan != null){
+            return bestCostCard.plan;
+        }
         return joins;
+
     }
 
     // ===================== Private Methods =================================
